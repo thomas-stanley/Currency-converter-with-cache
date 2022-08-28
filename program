@@ -2,49 +2,63 @@ import requests
 import json
 
 
+def cache_setup():
+  # Automatically adds usd and eur to the cache as they are commonly requested.
+  usd, eur = info["usd"], info["eur"]
+  cache["usd"], cache["eur"] = usd["rate"], eur["rate"]
+
+
+def in_cache(currency, funds):
+  # Finds the rate in cache and prints out the received amount
+  print("Oh! It's in the cache!")
+  rate = cache[currency]
+  amount_received = round(rate * funds, 2)
+  print(f"You received {amount_received} {currency.upper()}.")
+
+
+
+def not_in_cache(currency, funds):
+    # Adds the rate to cache and then prints out the received amount
+  print("Sorry, but it's not in the cache!")
+  info_currency = info[currency]
+  cache[currency] = info_currency["rate"]
+  rate = cache[currency]
+  amount_received = round(rate * funds, 2)
+  print(f"You received {amount_received} {currency.upper()}.")
+
+  
 def main():
-    continuing = "Y"
-    cache = {}
-    current_currency = input("What currency do you currently have? (three letter abbreviation): ").upper()
-    r = requests.get(f"https://www.floatrates.com/daily/{current_currency}.json")
-    if r:
-        # Automatically adds usd and eur to the cache as they are commonly requested.
-        info = json.loads(r.content)
-        usd, eur = info["usd"], info["eur"]
-        cache["usd"], cache["eur"] = usd["rate"], eur["rate"]
-        print(cache)
-        while continuing == "Y":
-            # Checks to ensure that the inputs are valid.
-            change_currency = input("What currency do you want to change to? (three letter abbreviation): ")
-            if change_currency not in info:
-              print("That's not a valid currency abbreviation!")
-              continue
-            amount = input(f"How much {current_currency} are you converting?: ")
-            try:
-              amount = float(amount)
-            except ValueError:
-              print("That's not a valid amount of money!")
-              continue
-            # End of the checks and inputs.
-            print("Checking the cache...")
-            if change_currency in cache:
-                # Finds the rate in cache and prints out the received amount
-                print("Oh! It's in the cache!")
-                rate = cache[change_currency]
-                amount_received = round(rate * amount, 2)
-                print(f"You received {amount_received} {change_currency.upper()}.")
-            else:
-                # Adds the rate to cache and then prints out the received amount
-                print("Sorry, but it's not in the cache!")
-                info_currency = info[change_currency]
-                cache[change_currency] = info_currency["rate"]
-                rate = cache[change_currency]
-                amount_received = round(rate * amount, 2)
-                print(f"You received {amount_received} {change_currency.upper()}.")
-            continuing = input("Would you like to convert your currency again? (Y/N): ").upper()
-    else:
-        print(f"Error code {r.status_code}, invalid currency!")
+  # Takes the current currency of the user and sends a read requests to the corret JSON file
+  global cache, info
+  continuing = "Y"
+  cache = {}
+  current_currency = input("What currency do you currently have? (three letter abbreviation): ").upper()
+  r = requests.get(f"https://www.floatrates.com/daily/{current_currency}.json")
+  if r:
+    info = json.loads(r.content)
+    cache_setup()
+    while continuing == "Y":
+      # Checks to ensure that the inputs are valid.
+      change_currency = input("What currency do you want to change to? (three letter abbreviation): ")
+      if change_currency not in info:
+        print("That's not a valid currency abbreviation!")
+        continue
+      amount = input(f"How much {current_currency} are you converting?: ")
+      try:
+        amount = float(amount)
+      except ValueError:
+        print("That's not a valid amount of money!")
+        continue
+      # End of the checks and inputs.
+      print("Checking the cache...")
+      if change_currency in cache:
+        in_cache(change_currency, amount)
+      else:
+        not_in_cache(change_currency, amount)
+      continuing = input("Would you like to convert your currency again? (Y/N): ").upper()
+  else:
+    print(f"Error code {r.status_code}, invalid currency!")
 
 
 if __name__ == "__main__":
-    main()
+  main()
